@@ -5,6 +5,8 @@ Evaluates Sigma-format detection rules against CloudTrail logs.
 
 Usage:
     python3 run.py --logs fixtures/logs/sample_events.json
+    python3 run.py --logs fixtures/logs/sample_events.json --format json
+    python3 run.py --logs fixtures/logs/sample_events.json --format sarif > results.sarif
 """
 import argparse
 import sys
@@ -15,8 +17,9 @@ from rich import box
 
 from engine.rule_loader import load_rules
 from engine.detection_engine import load_events, run_all_rules
+from engine.output_formatters import to_json, to_sarif
 
-console = Console()
+console = Console(stderr=True)
 
 LEVEL_COLORS = {
     "critical": "bold white on red",
@@ -26,30 +29,7 @@ LEVEL_COLORS = {
 }
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Sentinel Rules detection engine")
-    parser.add_argument("--logs", required=True, help="Path to CloudTrail JSON log file")
-    parser.add_argument("--rules", default="rules", help="Path to rules directory")
-    args = parser.parse_args()
-
-    console.print(Panel.fit(
-        "[bold cyan]SENTINEL RULES[/bold cyan]\n[dim]AWS Detection-as-Code Engine[/dim]",
-        border_style="cyan"
-    ))
-
-    rules = load_rules(args.rules)
-    console.print(f"[dim]Loaded {len(rules)} detection rules from {args.rules}/[/dim]")
-
-    try:
-        events = load_events(args.logs)
-    except FileNotFoundError:
-        console.print(f"[bold red]Error:[/bold red] log file not found: {args.logs}")
-        sys.exit(1)
-
-    console.print(f"[dim]Loaded {len(events)} CloudTrail events from {args.logs}[/dim]\n")
-
-    findings = run_all_rules(events, rules)
-
+def print_table_report(findings):
     if not findings:
         console.print("[bold green]No detections triggered.[/bold green] Environment appears clean against current ruleset.")
         return
@@ -85,6 +65,54 @@ def main():
         f"\n[bold]Summary:[/bold] {critical_count} critical, {high_count} high, "
         f"{len(findings) - critical_count - high_count} other"
     )
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Sentinel Rules detection engine")
+    parser.add_argument("--logs", required=True, help="Path to CloudTrail JSON log file")
+    parser.add_argument("--rules", default="rules", help="Path to rules directory")
+    parser.add_argument(
+        "--format", choices=["table", "json", "sarif"], default="table",
+        help="Output format: table (human readable), json (machine readable), sarif (GitHub code scanning / CI integration)"
+    )
+    parser.add_argument(
+        "--fail-on", choices=["critical", "high", "medium", "low", "none"], default="none",
+        help="Exit with non-zero status if any finding at or above this severity is present (for CI gating)"
+    )
+    args = parser.parse_args()
+
+    if args.format == "table":
+        console.print(Panel.fit(
+            "[bold cyan]SENTINEL RULES[/bold cyan]\n[dim]AWS Detection-as-Code Engine[/dim]",
+            border_style="cyan"
+        ))
+
+    rules = load_rules(args.rules)
+
+    try:
+        events = load_events(args.logs)
+    except FileNotFoundError:
+        console.print(f"[bold red]Error:[/bold red] log file not found: {args.logs}")
+        sys.exit(1)
+
+    if args.format == "table":
+        console.print(f"[dim]Loaded {len(rules)} detection rules from {args.rules}/[/dim]")
+        console.print(f"[dim]Loaded {len(events)} CloudTrail events from {args.logs}[/dim]\n")
+
+    findings = run_all_rules(events, rules)
+
+    if args.format == "json":
+        print(to_json(findings))
+    elif args.format == "sarif":
+        print(to_sarif(findings))
+    else:
+        print_table_report(findings)
+
+    if args.fail_on != "none":
+        severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+        threshold = severity_order[args.fail_on]
+        if any(severity_order.get(f.level, 4) <= threshold for f in findings):
+            sys.exit(1)
 
 
 if __name__ == "__main__":

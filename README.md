@@ -70,3 +70,23 @@ Cloud Security Engineer
 [toriolaopeyemi.com](https://toriolaopeyemi.com)
 [GitHub](https://github.com/GeekyBlessing)
 opeyemitoriola41@gmail.com
+
+## Output formats
+
+Sentinel Rules supports three output modes:
+
+- **table** (default): human readable terminal report with color coded severity
+- **json**: machine readable, for piping into other tools or scripts
+- **sarif**: SARIF 2.1.0 format, the standard used by GitHub code scanning, Semgrep, and CodeQL. This means findings can be uploaded directly to a repository's Security tab.
+
+```bash
+python3 run.py --logs fixtures/logs/sample_events.json --format sarif > results.sarif
+```
+
+## CI gating
+
+The `--fail-on` flag allows Sentinel Rules to act as a policy gate in a CI/CD pipeline, for example failing a deployment if a critical finding is present in recent CloudTrail activity:
+
+```bash
+python3 run.py --logs recent_events.json --fail-on critical
+```
