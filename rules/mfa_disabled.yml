@@ -1,0 +1,28 @@
+title: MFA Device Deactivated for IAM User
+id: 8f3c1e2a-1234-4abc-9def-000000000003
+status: stable
+description: |
+    Detects deactivation or deletion of a virtual MFA device. This is a common defense-evasion
+    step taken by an attacker who has already obtained valid credentials and is removing
+    second-factor protection to secure persistent, unchallenged access to the account.
+author: Toriola Opeyemi
+date: 2026/06/30
+modified: 2026/06/30
+references:
+    - https://attack.mitre.org/techniques/T1556/006/
+tags:
+    - attack.defense-evasion
+    - attack.t1556.006
+logsource:
+    product: aws
+    service: cloudtrail
+detection:
+    selection:
+        eventSource: iam.amazonaws.com
+        eventName:
+            - DeactivateMFADevice
+            - DeleteVirtualMFADevice
+    condition: selection
+falsepositives:
+    - User-initiated device replacement (correlate with helpdesk ticket ID in requestParameters if logged)
+level: high

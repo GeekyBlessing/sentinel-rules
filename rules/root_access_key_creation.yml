@@ -1,0 +1,29 @@
+title: Access Key Created for Root Account
+id: 8f3c1e2a-1234-4abc-9def-000000000002
+status: stable
+description: |
+    Detects creation of a long-lived access key for the AWS root account. Under a correctly
+    governed AWS Organization, the root user should have no active access keys at all — this
+    is a zero-tolerance control validated by CIS AWS Foundations Benchmark 1.4 (control 1.4).
+    Any occurrence of this event represents either a critical misconfiguration or active compromise.
+author: Toriola Opeyemi
+date: 2026/06/30
+modified: 2026/06/30
+references:
+    - https://attack.mitre.org/techniques/T1098/001/
+    - https://www.cisecurity.org/benchmark/amazon_web_services
+tags:
+    - attack.persistence
+    - attack.t1098.001
+logsource:
+    product: aws
+    service: cloudtrail
+detection:
+    selection:
+        eventSource: iam.amazonaws.com
+        eventName: CreateAccessKey
+        userIdentity.type: Root
+    condition: selection
+falsepositives:
+    - None. This should never legitimately occur in a hardened AWS account.
+level: critical

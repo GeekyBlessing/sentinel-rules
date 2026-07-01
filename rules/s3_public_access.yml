@@ -1,0 +1,39 @@
+title: S3 Bucket Policy Modified to Allow Public Access
+id: 8f3c1e2a-1234-4abc-9def-000000000004
+status: stable
+description: |
+    Detects S3 bucket policy or ACL changes that grant access to AllUsers or AuthenticatedUsers
+    (i.e. the entire internet). This is the most common root cause of large-scale cloud data
+    exposure incidents and should be treated as a high-confidence exfiltration precursor.
+author: Toriola Opeyemi
+date: 2026/06/30
+modified: 2026/06/30
+references:
+    - https://attack.mitre.org/techniques/T1530/
+    - https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html
+tags:
+    - attack.exfiltration
+    - attack.t1530
+    - attack.collection
+logsource:
+    product: aws
+    service: cloudtrail
+detection:
+    selection:
+        eventSource: s3.amazonaws.com
+        eventName:
+            - PutBucketPolicy
+            - PutBucketAcl
+    public_indicator:
+        requestParameters|contains:
+            - 'AllUsers'
+            - 'AuthenticatedUsers'
+            - '"Effect":"Allow","Principal":"*"'
+    filter_known_static_sites:
+        requestParameters.bucketName|contains:
+            - 'public-assets'
+            - 'static-site'
+    condition: selection and public_indicator and not filter_known_static_sites
+falsepositives:
+    - Intentional public static-site hosting buckets (maintain an explicit allowlist, do not rely on naming alone in production)
+level: high

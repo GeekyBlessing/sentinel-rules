@@ -1,0 +1,43 @@
+title: IAM Privilege Escalation via High-Risk Policy Attachment
+id: 8f3c1e2a-1234-4abc-9def-000000000001
+status: stable
+description: |
+    Detects attachment of administrator-equivalent IAM policies to users or roles.
+    This technique is consistently observed in cloud intrusion case studies (e.g. Capital One 2019,
+    Scattered Spider cloud campaigns) as the final step before full account takeover, following
+    initial access via leaked credentials or SSRF-based metadata theft.
+author: Toriola Opeyemi
+date: 2026/06/30
+modified: 2026/06/30
+references:
+    - https://attack.mitre.org/techniques/T1078/004/
+    - https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html
+tags:
+    - attack.privilege-escalation
+    - attack.t1078.004
+    - attack.persistence
+logsource:
+    product: aws
+    service: cloudtrail
+detection:
+    selection_events:
+        eventSource: iam.amazonaws.com
+        eventName:
+            - AttachUserPolicy
+            - AttachRolePolicy
+            - PutUserPolicy
+            - PutRolePolicy
+    high_risk_policy:
+        requestParameters.policyArn|contains:
+            - 'AdministratorAccess'
+            - 'PowerUserAccess'
+            - 'IAMFullAccess'
+    filter_known_automation:
+        userIdentity.arn|contains:
+            - 'terraform-deploy-role'
+            - 'ci-cd-pipeline-role'
+    condition: selection_events and high_risk_policy and not filter_known_automation
+falsepositives:
+    - Legitimate admin onboarding via approved change ticket (correlate with ITSM system)
+    - Break-glass emergency access procedures (should still page on-call for verification)
+level: high

@@ -1,0 +1,34 @@
+title: Correlated Account Takeover Chain (MFA Disable -> Privilege Escalation)
+id: 8f3c1e2a-1234-4abc-9def-000000000006
+status: experimental
+description: |
+    High-confidence correlation rule: fires when MFA is disabled for a principal and that same
+    principal attaches a high-risk IAM policy within a short time window. Individually each event
+    has false positives; the sequence within 10 minutes is a strong account-takeover indicator
+    and should page on-call immediately.
+author: Toriola Opeyemi
+date: 2026/06/30
+references:
+    - https://attack.mitre.org/techniques/T1556/006/
+    - https://attack.mitre.org/techniques/T1078/004/
+tags:
+    - attack.defense-evasion
+    - attack.privilege-escalation
+logsource:
+    product: aws
+    service: cloudtrail
+detection:
+    mfa_disable:
+        eventName:
+            - DeactivateMFADevice
+            - DeleteVirtualMFADevice
+    priv_esc:
+        eventName:
+            - AttachUserPolicy
+            - AttachRolePolicy
+        requestParameters.policyArn|contains: 'AdministratorAccess'
+    condition: mfa_disable and priv_esc
+timeframe: 10m
+falsepositives:
+    - Extremely unlikely as a benign sequence; treat any match as a priority incident
+level: critical
