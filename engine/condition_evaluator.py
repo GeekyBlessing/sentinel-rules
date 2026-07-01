@@ -19,12 +19,19 @@ def evaluate_condition(condition_str: str, block_results: dict) -> bool:
 
     py_expr = " ".join(resolve(t) for t in tokens)
 
-    # Safety: only allow a strict whitelist of characters/words before eval
-    allowed = re.fullmatch(r"[\sA-Za-z()]+", py_expr.replace("True", "").replace("False", ""))
+    # Whitelist check: only True/False/and/or/not/parens allowed as tokens
     if not re.fullmatch(r"[\s()]*((True|False|and|or|not)[\s()]*)+", py_expr):
         raise ValueError(f"Unsafe or malformed condition expression: {condition_str}")
 
-    return eval(py_expr, {"__builtins__": {}}, {})
+    try:
+        result = eval(py_expr, {"__builtins__": {}}, {})
+    except SyntaxError as e:
+        raise ValueError(f"Malformed condition expression: {condition_str}") from e
+
+    if not isinstance(result, bool):
+        raise ValueError(f"Condition did not evaluate to a boolean: {condition_str}")
+
+    return result
 
 
 def evaluate_rule_detection(event: dict, detection: dict, match_block_fn) -> bool:

@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml jsonschema rich pytest
+
+      - name: Run test suite
+        run: pytest tests/ -v
+
+      - name: Validate all Sigma rules load correctly
+        run: |
+          python3 -c "
+          from engine.rule_loader import load_rules
+          rules = load_rules('rules')
+          assert len(rules) > 0, 'No rules loaded'
+          for r in rules:
+              assert r.id and r.title and r.detection, f'Rule {r.id} missing required fields'
+          print(f'Validated {len(rules)} rules successfully')
+          "
+
+      - name: Run end-to-end detection against sample fixtures
+        run: python3 run.py --logs fixtures/logs/sample_events.json
