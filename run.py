@@ -18,6 +18,7 @@ from rich import box
 from engine.rule_loader import load_rules
 from engine.detection_engine import load_events, run_all_rules
 from engine.output_formatters import to_json, to_sarif
+from engine.slack_alerter import send_slack_alert
 
 console = Console(stderr=True)
 
@@ -78,6 +79,8 @@ def main():
         "--format", choices=["table", "json", "sarif"], default="table",
         help="Output format: table (human readable), json (machine readable), sarif (GitHub code scanning / CI integration)"
     )
+    parser.add_argument("--slack-webhook", help="Slack Incoming Webhook URL to send alerts to")
+    parser.add_argument("--slack-min-severity", choices=["critical", "high", "medium", "low"], default="high", help="Minimum severity to alert on Slack")
     parser.add_argument(
         "--fail-on", choices=["critical", "high", "medium", "low", "none"], default="none",
         help="Exit with non-zero status if any finding at or above this severity is present (for CI gating)"
@@ -124,6 +127,15 @@ def main():
         print(to_sarif(findings))
     else:
         print_table_report(findings)
+
+    if args.slack_webhook and findings:
+        summary = send_slack_alert(args.slack_webhook, findings, min_severity=args.slack_min_severity)
+        if args.format == "table":
+            console.print(
+                f"[dim]Slack: {summary['alerts_sent']} sent, "
+                f"{summary['alerts_failed']} failed, "
+                f"{summary['suppressed_below_threshold']} below threshold[/dim]"
+            )
 
     if args.fail_on != "none":
         severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}

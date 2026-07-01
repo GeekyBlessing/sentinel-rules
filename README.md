@@ -104,3 +104,13 @@ This was tested against a live AWS account (500 events over a 24 hour window). D
 ## AWS credentials
 
 Live mode uses standard AWS credential resolution (`aws configure`, environment variables, or an IAM role). Read-only CloudTrail access is sufficient, no write permissions are required.
+
+## Slack alerting
+
+Sentinel Rules can send real-time Slack alerts for findings at or above a configurable severity threshold, using a Slack Incoming Webhook:
+
+```bash
+python3 run.py --live --hours 24 --slack-webhook https://hooks.slack.com/services/YOUR/WEBHOOK/URL --slack-min-severity high
+```
+
+Alerts include the rule title, actor, event details, and MITRE ATT&CK mapping, formatted as a Slack Block Kit message with severity-based color coding.
