@@ -90,3 +90,17 @@ The `--fail-on` flag allows Sentinel Rules to act as a policy gate in a CI/CD pi
 ```bash
 python3 run.py --logs recent_events.json --fail-on critical
 ```
+
+## Live AWS integration
+
+Sentinel Rules can pull real events directly from AWS CloudTrail Event History (the default 90-day event log available in every AWS account, no trail configuration required) instead of static fixture files:
+
+```bash
+python3 run.py --live --hours 24 --region eu-north-1
+```
+
+This was tested against a live AWS account (500 events over a 24 hour window). During testing, the `assume_role_anomaly` rule initially fired on every AWS service-linked role assumption (`userIdentity.type: AWSService`), which is expected internal AWS activity, not a security signal. The rule was tuned with an explicit filter to exclude AWS service principals, a real example of the false-positive reduction work that separates a usable detection rule from a noisy one.
+
+## AWS credentials
+
+Live mode uses standard AWS credential resolution (`aws configure`, environment variables, or an IAM role). Read-only CloudTrail access is sufficient, no write permissions are required.

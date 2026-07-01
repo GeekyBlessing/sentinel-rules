@@ -6,7 +6,7 @@ Evaluates Sigma-format detection rules against CloudTrail logs.
 Usage:
     python3 run.py --logs fixtures/logs/sample_events.json
     python3 run.py --logs fixtures/logs/sample_events.json --format json
-    python3 run.py --logs fixtures/logs/sample_events.json --format sarif > results.sarif
+    python3 run.py --live --hours 24 --region eu-north-1
 """
 import argparse
 import sys
@@ -69,7 +69,10 @@ def print_table_report(findings):
 
 def main():
     parser = argparse.ArgumentParser(description="Sentinel Rules detection engine")
-    parser.add_argument("--logs", required=True, help="Path to CloudTrail JSON log file")
+    parser.add_argument("--logs", help="Path to CloudTrail JSON log file")
+    parser.add_argument("--live", action="store_true", help="Fetch real events from AWS CloudTrail Event History instead of a file")
+    parser.add_argument("--region", default="eu-north-1", help="AWS region for live CloudTrail lookup")
+    parser.add_argument("--hours", type=int, default=24, help="Lookback window in hours for live mode")
     parser.add_argument("--rules", default="rules", help="Path to rules directory")
     parser.add_argument(
         "--format", choices=["table", "json", "sarif"], default="table",
@@ -81,6 +84,10 @@ def main():
     )
     args = parser.parse_args()
 
+    if not args.live and not args.logs:
+        console.print("[bold red]Error:[/bold red] must provide either --logs <file> or --live")
+        sys.exit(1)
+
     if args.format == "table":
         console.print(Panel.fit(
             "[bold cyan]SENTINEL RULES[/bold cyan]\n[dim]AWS Detection-as-Code Engine[/dim]",
@@ -89,15 +96,25 @@ def main():
 
     rules = load_rules(args.rules)
 
-    try:
-        events = load_events(args.logs)
-    except FileNotFoundError:
-        console.print(f"[bold red]Error:[/bold red] log file not found: {args.logs}")
-        sys.exit(1)
+    if args.live:
+        from engine.aws_fetcher import fetch_cloudtrail_events
+        if args.format == "table":
+            console.print(f"[dim]Fetching live CloudTrail events from AWS ({args.region}, last {args.hours}h)...[/dim]")
+        try:
+            events = fetch_cloudtrail_events(region=args.region, hours_back=args.hours)
+        except Exception as e:
+            console.print(f"[bold red]AWS fetch failed:[/bold red] {e}")
+            sys.exit(1)
+    else:
+        try:
+            events = load_events(args.logs)
+        except FileNotFoundError:
+            console.print(f"[bold red]Error:[/bold red] log file not found: {args.logs}")
+            sys.exit(1)
 
     if args.format == "table":
         console.print(f"[dim]Loaded {len(rules)} detection rules from {args.rules}/[/dim]")
-        console.print(f"[dim]Loaded {len(events)} CloudTrail events from {args.logs}[/dim]\n")
+        console.print(f"[dim]Loaded {len(events)} CloudTrail events[/dim]\n")
 
     findings = run_all_rules(events, rules)
 

@@ -1,14 +1,15 @@
 title: Suspicious Cross-Account AssumeRole Activity
 id: 8f3c1e2a-1234-4abc-9def-000000000005
-status: experimental
+status: stable
 description: |
     Detects AssumeRole calls, with emphasis on cross-account role assumption. Lateral movement
     between AWS accounts (e.g. Management -> Log Archive, or between member accounts in an
     Organization) frequently relies on legitimate AssumeRole calls made with stolen credentials,
-    making this a high-value but noisy signal that requires an account-ID allowlist to tune.
+    making this a high-value but noisy signal that requires tuning against AWS service-linked
+    role activity before it is usable in production.
 author: Toriola Opeyemi
 date: 2026/06/30
-modified: 2026/06/30
+modified: 2026/07/01
 references:
     - https://attack.mitre.org/techniques/T1550/001/
 tags:
@@ -21,7 +22,13 @@ detection:
     selection:
         eventSource: sts.amazonaws.com
         eventName: AssumeRole
-    condition: selection
+    filter_aws_service_principals:
+        userIdentity.type: AWSService
+    filter_known_automation:
+        userIdentity.arn|contains:
+            - 'terraform-deploy-role'
+            - 'ci-cd-pipeline-role'
+    condition: selection and not filter_aws_service_principals and not filter_known_automation
 falsepositives:
-    - Legitimate cross-account automation (Terraform, CI/CD, cross-account backup jobs) — tune with an allowlist of known account IDs before promoting to 'stable'
+    - Legitimate cross-account automation (Terraform, CI/CD, cross-account backup jobs) not yet in the allowlist
 level: medium
