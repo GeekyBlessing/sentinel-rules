@@ -3,6 +3,12 @@
 **AWS Detection-as-Code Engine using Sigma-format rules mapped to MITRE ATT&CK**
 
 ![CI](https://github.com/GeekyBlessing/sentinel-rules/actions/workflows/ci.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)
+![MITRE ATT&CK](https://img.shields.io/badge/MITRE%20ATT%26CK-6%20techniques-red)
+![License](https://img.shields.io/badge/license-MIT-green)
+![AWS](https://img.shields.io/badge/AWS-CloudTrail-orange)
+
+
 
 Sentinel Rules is a detection engineering project that codifies AWS threat detection logic as version-controlled Sigma rules, then evaluates those rules against CloudTrail logs using a custom Python engine. It is designed to complement offensive security findings (such as those in [AWS Attack Path Analyzer](https://github.com/GeekyBlessing/aws-attack-path-analyzer)) with the blue-team detection layer that catches an attacker actually using those paths.
 
@@ -139,3 +145,45 @@ Alerts include the rule title, actor, event details, and MITRE ATT&CK mapping, f
 | Additional AWS services (Lambda, EC2, RDS) | Planned |
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system diagrams and [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) for the full threat model and ATT&CK coverage matrix.
+
+## Security disclaimer
+
+Sentinel Rules is built for defensive security, detection engineering research, cloud security monitoring, and educational purposes. It is designed to detect suspicious activity in AWS accounts you own or are authorized to monitor. It is not a penetration testing or offensive security tool.
+
+## Quantifiable impact
+
+- 6 Sigma detection rules covering 6 MITRE ATT&CK techniques across 5 tactics (Persistence, Defense Evasion, Privilege Escalation, Exfiltration, Lateral Movement)
+- 34 automated tests, 100% passing in CI
+- CI validated across Python 3.10, 3.11, and 3.12
+- Live-tested against a real AWS account: 500 CloudTrail events processed
+- Multi-stage attack correlation (MFA disable to privilege escalation chain)
+- JSON and SARIF 2.1.0 output for tool interoperability
+- Slack alerting with severity-based filtering
+- Documented false-positive tuning (AWS service-linked role noise eliminated)
+
+## Detection engineering methodology
+
+This project follows a structured detection engineering workflow:
+
+1. **Threat modeling** — identify the attack chain to detect (see [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md))
+2. **Rule authoring** — write detection logic in Sigma format for portability and industry-standard tooling compatibility
+3. **MITRE ATT&CK mapping** — tag each rule with the tactic and technique it detects
+4. **False-positive tuning** — test against real account activity, identify noise sources (e.g. AWS service-linked roles), add explicit filters
+5. **Correlation development** — chain individually weak signals into high-confidence multi-stage alerts
+6. **Testing** — unit test every component (field matching, condition logic, correlation timing) in isolation
+7. **CI/CD integration** — validate rules and tests automatically on every commit across multiple Python versions
+8. **Alerting** — route findings to Slack with severity-based filtering to avoid alert fatigue
+
+## Test coverage
+| Module | Coverage |
+|---|---|
+| output_formatters.py | 100% |
+| field_matcher.py | 94% |
+| condition_evaluator.py | 92% |
+| detection_engine.py | 86% |
+| slack_alerter.py | 82% |
+| rule_loader.py | 71% |
+| aws_fetcher.py | 0% (requires live AWS calls, not unit tested; validated manually against a real account instead) |
+| **Total** | **78%** |
+
+34 tests, 100% passing, run automatically in CI on every push across Python 3.10, 3.11, and 3.12.
