@@ -114,3 +114,26 @@ python3 run.py --live --hours 24 --slack-webhook https://hooks.slack.com/service
 ```
 
 Alerts include the rule title, actor, event details, and MITRE ATT&CK mapping, formatted as a Slack Block Kit message with severity-based color coding.
+
+## Feature overview
+
+| Feature | Status |
+|---|---|
+| Sigma-format detection rules | Done |
+| MITRE ATT&CK mapping | Done |
+| Custom condition evaluator (and/or/not) | Done |
+| False-positive tuning filters | Done |
+| Timeframe-based correlation detection | Done |
+| Unit test suite (34 tests) | Done |
+| CI pipeline (GitHub Actions, 3 Python versions) | Done |
+| JSON output | Done |
+| SARIF 2.1.0 output (GitHub code scanning compatible) | Done |
+| CI policy gating (`--fail-on`) | Done |
+| Live AWS CloudTrail integration (boto3) | Done |
+| Slack alerting | Done |
+| Architecture and threat model documentation | Done |
+| GuardDuty finding ingestion | Planned |
+| N-stage correlation chains | Planned |
+| Additional AWS services (Lambda, EC2, RDS) | Planned |
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system diagrams and [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) for the full threat model and ATT&CK coverage matrix.
