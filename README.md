@@ -11,6 +11,8 @@ Sentinel Rules is a detection engineering project that codifies AWS threat detec
 Most cloud security portfolios are heavy on offensive tooling and light on detection engineering. Sentinel Rules closes that gap by demonstrating the full detection lifecycle: threat modeling, rule authoring in an industry-standard format (Sigma), false-positive tuning, MITRE ATT&CK mapping, and correlation logic for multi-stage attack chains.
 
 ## Architecture
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full system diagram, detection evaluation flow, and correlation engine flow (Mermaid diagrams, render directly on GitHub).
+
 ## Detection rules included
 
 | Rule | Severity | MITRE ATT&CK | Status |
