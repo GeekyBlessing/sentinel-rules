@@ -2,6 +2,8 @@
 
 **AWS Detection-as-Code Engine using Sigma-format rules mapped to MITRE ATT&CK**
 
+![CI](https://github.com/GeekyBlessing/sentinel-rules/actions/workflows/ci.yml/badge.svg)
+
 Sentinel Rules is a detection engineering project that codifies AWS threat detection logic as version-controlled Sigma rules, then evaluates those rules against CloudTrail logs using a custom Python engine. It is designed to complement offensive security findings (such as those in [AWS Attack Path Analyzer](https://github.com/GeekyBlessing/aws-attack-path-analyzer)) with the blue-team detection layer that catches an attacker actually using those paths.
 
 ## Why this project exists
